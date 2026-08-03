@@ -80,6 +80,16 @@ Các trường hợp đã xử lý:
 
 `ChunkingStrategyComparator` chạy ba chiến lược và trả về số lượng chunk, độ dài trung bình và nội dung các chunk để tiện so sánh.
 
+Khi chạy trên `data/k4_ecommerce/shopee_return_policy.md` với `chunk_size = 500`, comparator cho kết quả thực tế:
+
+| Chiến lược | Số chunk | Độ dài trung bình |
+|---|---:|---:|
+| Fixed-size (không overlap trong comparator) | 40 | 493,20 ký tự |
+| Sentence (3 câu/chunk) | 47 | 416,85 ký tự |
+| Recursive | 61 | 321,26 ký tự |
+
+Riêng chiến lược cá nhân `FixedSizeChunker(chunk_size=500, overlap=50)` tạo **44 chunk**, độ dài trung bình **497,23 ký tự**; 43 chunk dài 500 ký tự và chunk cuối dài 378 ký tự.
+
 ### 2.5. EmbeddingStore
 
 Tôi sử dụng in-memory store cho checkpoint nhẹ của lab. Mỗi record lưu:
@@ -101,55 +111,84 @@ Agent lấy các chunk liên quan từ `EmbeddingStore`, ghép chúng thành con
 
 ## 3. Kết quả kiểm thử
 
-Đã chạy:
+Môi trường hiện tại có Python 3.11 nhưng chưa cài `pytest`, vì vậy lệnh sau chưa chạy được:
 
 ```powershell
-python -m pytest tests -v
+py -3.11 -m pytest tests -v
 ```
 
 Kết quả:
 
 ```text
-42 passed in 0.21s
+No module named pytest
 ```
 
-Các test của `FixedSizeChunker` đều pass, cùng với test cho sentence chunking, recursive chunking, similarity, vector store, metadata filter, delete document và agent.
+Để kiểm tra cùng bộ 42 test mà không thay đổi code hoặc cài thêm thư viện, tôi chạy bằng `unittest`:
+
+```powershell
+$env:LAB_SOLUTION_PACKAGE='src.ChuTuanViet_2A202601082'
+py -3.11 -m unittest tests.test_solution -v
+```
+
+Kết quả thực tế:
+
+```text
+Ran 42 tests in 0.007s
+OK
+```
+
+**42/42 test pass.** Lỗi cấu trúc trước đó ở `TestProjectStructure.test_src_package_exists` đã được xử lý bằng cách bổ sung `src/__init__.py`, giúp Python nhận diện `src` là package. Toàn bộ test cấu trúc và test chức năng của chunking, cosine similarity, vector store, metadata filter, xóa document và agent đều pass.
 
 Đã chạy thêm pipeline kiểm tra:
 
 ```powershell
-python ingest.py
+py -3.11 ingest.py
 ```
 
 Kết quả:
 
 ```text
-ingest self-check OK: parse được 4 khóa metadata, tạo 18 chunk
+ModuleNotFoundError: No module named 'src.chunking'
 ```
 
-## 4. Dự đoán similarity
+Nguyên nhân là `ingest.py` import cố định `src.chunking`, không import package cá nhân `src.ChuTuanViet_2A202601082`. Theo yêu cầu không sửa code, lỗi này được giữ nguyên và ghi nhận trung thực. `main.py` cũng chưa chạy đến phần demo vì môi trường thiếu dependency `python-dotenv` (`ModuleNotFoundError: No module named 'dotenv'`).
 
-| Cặp | Câu A | Câu B | Dự đoán |
-|---|---|---|---|
-| 1 | Chính sách đổi trả trong 30 ngày. | Sản phẩm được đổi trong vòng 30 ngày. | Cao |
-| 2 | Phí giao hàng do khách hàng thanh toán. | Mô hình cần dữ liệu để huấn luyện. | Thấp |
-| 3 | Người bán phải cung cấp thông tin sản phẩm chính xác. | Seller cần đăng thông tin sản phẩm đầy đủ. | Cao |
-| 4 | Khách hàng yêu cầu hoàn tiền sau khi trả hàng. | Máy tính xử lý hình ảnh bằng mạng neuron. | Thấp |
-| 5 | Thời gian giao hàng phụ thuộc vào địa chỉ nhận. | Địa điểm nhận hàng ảnh hưởng đến thời gian giao. | Cao |
+## 4. Dự đoán và kết quả similarity
 
-Các cặp có ý nghĩa gần nhau được dự đoán có similarity cao dù cách diễn đạt khác nhau. Đây là mục tiêu chính của embedding: biểu diễn mức độ gần nhau về nghĩa thay vì chỉ so khớp từ khóa.
+| Cặp | Câu A | Câu B | Dự đoán | Điểm thực tế (`MockEmbedder`) | Đối chiếu |
+|---|---|---|---|---:|---|
+| 1 | Chính sách đổi trả trong 30 ngày. | Sản phẩm được đổi trong vòng 30 ngày. | Cao | 0,2342 | Cùng chiều nhưng điểm thấp |
+| 2 | Phí giao hàng do khách hàng thanh toán. | Mô hình cần dữ liệu để huấn luyện. | Thấp | -0,0253 | Phù hợp |
+| 3 | Người bán phải cung cấp thông tin sản phẩm chính xác. | Seller cần đăng thông tin sản phẩm đầy đủ. | Cao | 0,2058 | Cùng chiều nhưng điểm thấp |
+| 4 | Khách hàng yêu cầu hoàn tiền sau khi trả hàng. | Máy tính xử lý hình ảnh bằng mạng neuron. | Thấp | -0,0835 | Phù hợp |
+| 5 | Thời gian giao hàng phụ thuộc vào địa chỉ nhận. | Địa điểm nhận hàng ảnh hưởng đến thời gian giao. | Cao | -0,1308 | Không phù hợp |
 
-## 5. Đóng góp cá nhân
+Về ngữ nghĩa, các dự đoán ban đầu vẫn hợp lý. Tuy nhiên, `MockEmbedder` tạo vector xác định để phục vụ unit test chứ không phải embedding ngữ nghĩa, nên điểm thực tế không phản ánh tốt độ gần nghĩa của tiếng Việt. Đặc biệt cặp 5 có nghĩa gần nhau nhưng nhận điểm âm. Vì vậy không nên dùng các điểm mock này để kết luận chất lượng chiến lược.
 
-- Hoàn thiện các chức năng chunking và similarity trong `src/chunking.py`.
-- Hoàn thiện lưu trữ, tìm kiếm, lọc metadata và xóa document trong `src/store.py`.
-- Hoàn thiện luồng RAG cơ bản trong `src/agent.py`.
+## 5. Kết quả truy xuất với 5 câu hỏi chung
+
+Tôi nạp toàn bộ 7 file Markdown trong `data/k4_ecommerce`, chia bằng `FixedSizeChunker(500, 50)` và thu được **139 chunk**. Do môi trường không có embedding model thật, lần chạy dùng `MockEmbedder`; bảng dưới ghi đúng top-3 theo tên file:
+
+| # | Nguồn của top-1 → top-3 | Nhận xét |
+|---|---|---|
+| 1 | `seller_conditions.md` → `seller_conditions.md` → `tiki_return_policy.md` | Chunk Tiki liên quan xuất hiện ở top-3 nhưng không ở top-1. |
+| 2 | `lazada_refund_policy.md` → `seller_conditions.md` → `lazada_refund_policy.md` | Không truy xuất được chunk Shopee trong top-3. |
+| 3 | `seller-listing.md` → `ghn_shipping_policy.md` → `seller_conditions.md` | Có tài liệu người bán ở top-1 và top-3, nhưng còn nhiễu GHN. |
+| 4 | `lazada_refund_policy.md` → `seller_conditions.md` → `shopee_return_policy.md` | Có Lazada nhưng thiếu GHN, nên chưa đủ dữ liệu để so sánh. |
+| 5 | `tiki_return_policy.md` → `seller_conditions.md` → `seller_conditions.md` | Có Tiki ở top-1 nhưng thiếu các nguồn liên quan khác. |
+
+Kết quả này cho thấy pipeline lưu trữ và xếp hạng chạy được khi gọi trực tiếp package cá nhân, nhưng chất lượng retrieval bằng mock embedding thấp và không đủ cơ sở chấm câu trả lời của agent. Muốn đánh giá có ý nghĩa cần chạy lại cùng dữ liệu bằng embedding đa ngữ thật và một `llm_fn` thực tế.
+
+## 6. Đóng góp cá nhân
+
+- Hoàn thiện các chức năng chunking và similarity trong `src/ChuTuanViet_2A202601082/chunking.py`.
+- Hoàn thiện lưu trữ, tìm kiếm, lọc metadata và xóa document trong `src/ChuTuanViet_2A202601082/store.py`.
+- Hoàn thiện luồng RAG cơ bản trong `src/ChuTuanViet_2A202601082/agent.py`.
 - Bổ sung kiểm tra tham số cho `FixedSizeChunker`.
-- Chạy và xác nhận toàn bộ 42 test đều pass.
-- Kiểm tra pipeline ingest tạo chunk và giữ metadata.
+- Bổ sung `src/__init__.py` để hoàn thiện cấu trúc package mà bộ test yêu cầu.
+- Chạy và xác nhận toàn bộ 42/42 test đều pass trên Python 3.11.
+- Chạy trực tiếp package cá nhân để kiểm tra thống kê chunking, similarity và top-3 retrieval trên dữ liệu nhóm.
 
-## 6. Kết luận
+## 7. Kết luận
 
-Fixed-size chunking là baseline đơn giản và dễ kiểm soát, nhưng có thể làm mất ranh giới ngữ nghĩa tự nhiên. Sentence chunking giữ tính dễ đọc tốt hơn, còn recursive chunking linh hoạt hơn với tài liệu có nhiều cấu trúc. Trong phần cá nhân, các interface chính của lab đã được hoàn thiện và xác nhận bằng test tự động.
-
-> Kết quả benchmark retrieval với 5 câu hỏi chính thức của nhóm sẽ được bổ sung sau khi nhóm thống nhất câu hỏi, gold answer và bộ tài liệu chung.
+Fixed-size chunking là baseline đơn giản và dễ kiểm soát, nhưng có thể cắt ngang ranh giới ngữ nghĩa tự nhiên. Sentence chunking giữ câu hoàn chỉnh tốt hơn, còn recursive chunking linh hoạt với tài liệu có cấu trúc. Package cá nhân hiện vượt qua toàn bộ 42 test về cấu trúc và hành vi. Kết quả benchmark hiện tại cũng chỉ ra rõ giới hạn của mock embedding: code retrieval chạy được nhưng thứ hạng chưa phản ánh đúng ngữ nghĩa tiếng Việt.
