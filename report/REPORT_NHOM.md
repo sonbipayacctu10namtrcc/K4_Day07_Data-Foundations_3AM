@@ -92,8 +92,65 @@ def chunk(self, text: str) -> list[str]:
 
 **Thành viên 3 — [Vũ Quốc Anh]**
 - **Loại chiến lược:** [Recursive]
-- **Mô tả & lý do chọn:**
+- **Mô tả & lý do chọn:** Chia nhỏ văn bản đệ quy sử dụng danh sách ký tự phân tách theo thứ tự ưu tiên giảm dần (`\n\n`, `\n`, `. `, ` `, `""`). Lý do: Chiến lược này giúp giữ nguyên cấu trúc đoạn văn, danh mục của các tài liệu chính sách thương mại điện tử, chỉ thực hiện chia nhỏ khi độ dài vượt quá giới hạn cấu hình, đảm bảo tính liên kết ngữ cảnh tốt hơn so với cắt cứng theo ký tự.
 - **Code snippet (nếu custom):**
+```python
+    def chunk(self, text: str) -> list[str]:
+        if not text:
+            return []
+        return self._split(text, self.separators)
+
+    def _split(self, current_text: str, remaining_separators: list[str]) -> list[str]:
+        if len(current_text) <= self.chunk_size:
+            return [current_text]
+
+        if not remaining_separators:
+            chunks = []
+            for i in range(0, len(current_text), self.chunk_size):
+                chunks.append(current_text[i : i + self.chunk_size])
+            return chunks
+
+        sep = remaining_separators[0]
+        next_seps = remaining_separators[1:]
+
+        if sep == "":
+            chunks = []
+            for i in range(0, len(current_text), self.chunk_size):
+                chunks.append(current_text[i : i + self.chunk_size])
+            return chunks
+
+        if sep not in current_text:
+            return self._split(current_text, next_seps)
+
+        parts = current_text.split(sep)
+        processed_parts = []
+        for part in parts:
+            if len(part) > self.chunk_size:
+                processed_parts.extend(self._split(part, next_seps))
+            else:
+                processed_parts.append(part)
+
+        chunks = []
+        current_chunk = []
+        current_len = 0
+
+        for part in processed_parts:
+            added_len = len(part) + (len(sep) if current_chunk else 0)
+            if current_len + added_len <= self.chunk_size:
+                current_chunk.append(part)
+                current_len += added_len
+            else:
+                if current_chunk:
+                    chunks.append(sep.join(current_chunk))
+                current_chunk = [part]
+                current_len = len(part)
+
+        if current_chunk:
+            chunks.append(sep.join(current_chunk))
+
+        return chunks
+```
+
 
 ### So Sánh Giữa Các Thành Viên
 
