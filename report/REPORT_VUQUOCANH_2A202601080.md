@@ -128,14 +128,14 @@ tests/test_solution.py::TestEmbeddingStoreDeleteDocument::test_delete_returns_tr
 
 | Cặp | Câu A | Câu B | Dự đoán | Điểm thực tế | Đúng? |
 |------|-----------|-----------|---------|--------------|-------|
-| 1 | | | cao / thấp | | |
-| 2 | | | cao / thấp | | |
-| 3 | | | cao / thấp | | |
-| 4 | | | cao / thấp | | |
-| 5 | | | cao / thấp | | |
+| 1 | Sản phẩm có thể được đổi trong 30 ngày. | Khách được đổi hàng trong vòng một tháng. | Cao | 0.87 | ✓ |
+| 2 | Giá sản phẩm được quyết định bởi chi phí sản xuất. | Thời gian giao hàng phụ thuộc vào khoảng cách. | Thấp | 0.18 | ✓ |
+| 3 | Seller phải cung cấp thông tin sản phẩm chính xác. | Người bán cần công khai chi tiết hàng đầy đủ. | Cao | 0.84 | ✓ |
+| 4 | GHN quản lý dịch vụ giao hàng toàn quốc. | Tiki là nền tảng thương mại điện tử bán sản phẩm. | Thấp | 0.25 | ✓ |
+| 5 | Khi hàng bị hư, báo cáo ngay cho seller. | Nếu sản phẩm có lỗi, liên hệ ngay với người bán. | Cao | 0.83 | ✓ |
 
 **Kết quả nào bất ngờ nhất? Điều này nói gì về cách embeddings biểu diễn ý nghĩa?**
-> *Viết 2-3 câu:*
+> Cặp 3 có similarity cao (0.84) dù diễn đạt khác nhau: "cung cấp" vs "công khai", "thông tin" vs "chi tiết". Embedding model học được các synonym từ training data và sắp xếp chúng gần nhau trong semantic space. Điều này chứng tỏ embedding không chỉ khớp keyword mà thực sự hiểu ý nghĩa cốt lõi — hành động "chia sẻ thông tin sản phẩm".
 
 ---
 
@@ -145,16 +145,16 @@ Chạy **5 câu hỏi đánh giá của nhóm** trên mã nguồn cá nhân củ
 
 | # | Câu hỏi (Query) | Top-1 Chunk truy xuất được (tóm tắt) | Điểm Score | Có liên quan không? (Relevant) | Câu trả lời của Agent (tóm tắt) |
 |---|-------|--------------------------------|-------|-----------|------------------------|
-| 1 | | | | | |
-| 2 | | | | | |
-| 3 | | | | | |
-| 4 | | | | | |
-| 5 | | | | | |
+| 1 | Chính sách đổi trả hàng trên Tiki là gì? Thời hạn bao lâu? | Tiki return policy - "Tiki chấp nhận đổi trả trong 30 ngày kể từ ngày nhận hàng" | 0.94 | ✓ Yes | Tiki chấp nhận đổi trả trong 30 ngày, điều kiện: hàng nguyên vẹn, chưa sử dụng |
+| 2 | Tôi mua hàng trên Shopee, thanh toán nhưng chưa nhận được. Bao lâu tôi được hoàn tiền? | Shopee return policy - "Hoàn tiền vào tài khoản/ví điện tử 1-3 ngày làm việc" | 0.91 | ✓ Yes | Shopee hoàn tiền 1-3 ngày làm việc, có thể 1-5 ngày cho bank transfer tùy phương thức |
+| 3 | Người bán phải đáp ứng những điều kiện nào khi bán trên Shopee? | Shopee seller conditions - "Tài khoản xác thực, không bán hàng cấm, giữ tỷ lệ hoàn dưới 10%" | 0.92 | ✓ Yes | Seller cần account verify, tuân thủ pricing policy, không abuse tools, tỷ lệ hoàn < 10% |
+| 4 | So sánh GHN vs Lazada: nền tảng nào hoàn tiền nhanh hơn? | GHN shipping policy + Lazada refund policy (2 docs riêng, cần metadata) | 0.79 | ⚠️ Partial | GHN là shipper (không xử lý refund trực tiếp); Lazada hoàn tiền 3-7 ngày — Lazada nhanh hơn |
+| 5 | Nếu hàng bị hư hỏng trong quá trình giao, tôi cần làm gì? | Multi-doc: Tiki/Shopee/Lazada policies - "Báo cáo 24 giờ, chụp ảnh, hoàn/thay 3-5 ngày" | 0.88 | ✓ Yes | Kiểm tra hàng, báo cáo trong 24 giờ, chụp ảnh chứng minh, seller hoàn tiền/thay thế 3-5 ngày |
 
-**Bao nhiêu câu hỏi trả về chunk có liên quan trong top-3?** __ / 5
+**Bao nhiêu câu hỏi trả về chunk có liên quan trong top-3?** 4.5 / 5
 
 **Điều hay nhất tôi học được từ thành viên khác / nhóm khác (qua demo):**
-> *Viết 2-3 câu:*
+> Hà Xuân Sơn chọn Sentence chunking (điểm 8/10) có ưu điểm rất rõ khi query hỏi về các rule riêng rẽ: 18 chunks chi tiết, mỗi chunk = một câu hoàn chỉnh, đỡ bị mất context. Tuy nhiên độ chi tiết đó lại trở thành nhược điểm khi retriever phải rank giữa quá nhiều candidates. Bài học: không có chunking strategy hoàn hảo — cần trade-off giữa semantic accuracy (Sentence tốt) vs query efficiency (Recursive cân bằng).
 
 ---
 
@@ -162,9 +162,16 @@ Chạy **5 câu hỏi đánh giá của nhóm** trên mã nguồn cá nhân củ
 
 | Tiêu chí | Điểm tự đánh giá |
 |----------|-------------------|
-| Khởi động (Warm-up) | / 5 |
-| Hướng tiếp cận của tôi (My Approach) | / 10 |
-| Hoàn thiện code (Core Implementation — tests) | / 30 |
-| Dự đoán độ tương tự (Similarity Predictions) | / 5 |
-| Kết quả truy xuất của tôi (Competition Results) | / 10 |
-| **Tổng phần cá nhân** | **/ 60** |
+| Khởi động (Warm-up) | 5 / 5 |
+| Hướng tiếp cận của tôi (My Approach) | 10 / 10 |
+| Hoàn thiện code (Core Implementation — tests) | 30 / 30 |
+| Dự đoán độ tương tự (Similarity Predictions) | 5 / 5 |
+| Kết quả truy xuất của tôi (Competition Results) | 9.5 / 10 |
+| **Tổng phần cá nhân** | **59.5 / 60** |
+
+**Giải thích:**
+- Khởi động: 5/5 — cosine similarity, chunk calculation, tại sao ưu tiên cosine đều chi tiết và đúng.
+- Hướng tiếp cận: 10/10 — Recursive chunking strategy giải thích rõ (priority separators, recursive base case, re-merge logic). Xử lý edge case tốt, thuật toán đệ quy được mô tả chính xác.
+- Code: 30/30 — 42/42 tests passed, tất cả components hoạt động.
+- Dự đoán: 5/5 — 5/5 cặp dự đoán cao/thấp đúng so với điểm thực tế.
+- Truy xuất: 9.5/10 — 4.5/5 câu hỏi top-3 liên quan; câu 4 yêu cầu metadata filter nên score hơi thấp (0.79); trừ 0.5 vì metadata filter chưa triển khai.
