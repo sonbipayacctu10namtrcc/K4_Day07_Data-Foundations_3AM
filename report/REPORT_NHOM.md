@@ -1,8 +1,8 @@
 # Báo Cáo Nhóm — Lab 7: Embedding & Vector Store
 
-**Nhóm:** [Tên nhóm]
-**Thành viên:** [Họ tên từng thành viên]
-**Ngày:** [Ngày nộp]
+**Nhóm:** [3AM]
+**Thành viên:** [Hà Xuân Sơn, Chu Tuấn Việt, Vũ Quốc Anh]
+**Ngày:** [03/08/2026]
 
 > **Nộp 1 bản / nhóm.** Phần cá nhân (hướng tiếp cận, kết quả riêng, dự đoán…) mỗi thành viên nộp riêng trong `REPORT_CANHAN.md`. Chi tiết thang điểm: `docs/SCORING.md`.
 
@@ -70,8 +70,25 @@ Chạy `ChunkingStrategyComparator().compare()` trên 2-3 tài liệu:
 
 **Thành viên 2 — [Hà Xuân Sơn]**
 - **Loại chiến lược:** [Sentence]
-- **Mô tả & lý do chọn:**
+- **Mô tả & lý do chọn:** Chia text thành câu bằng regex phát hiện dấu câu (. ! ?), sau đó nhóm 3 câu/chunk. Lý do: chính sách thương mại có nhiều câu độc lập (thanh toán = 1 câu, đổi trả = 1 câu…), chia câu sẽ giữ semantic hoàn chỉnh và tránh cắt ý giữa chừng. Phù hợp với chủ đề list/rule.
 - **Code snippet (nếu custom):**
+```python
+import re
+
+def chunk(self, text: str) -> list[str]:
+    sentences = re.split(r'(?<=[.!?])\s+', text)
+    sentences = [s.strip() for s in sentences if s.strip()]
+    chunks = []
+    current_chunk = []
+    for sentence in sentences:
+        current_chunk.append(sentence)
+        if len(current_chunk) >= self.max_sentences_per_chunk:
+            chunks.append(' '.join(current_chunk))
+            current_chunk = []
+    if current_chunk:
+        chunks.append(' '.join(current_chunk))
+    return chunks
+```
 
 **Thành viên 3 — [Vũ Quốc Anh]**
 - **Loại chiến lược:** [Recursive]
