@@ -60,21 +60,21 @@ Chạy `ChunkingStrategyComparator().compare()` trên 2-3 tài liệu:
 
 > Mỗi thành viên điền một khối dưới đây (copy thêm nếu nhóm có nhiều hơn 3 người).
 
-**Thành viên 1 — [Tên]**
-- **Loại chiến lược:** [FixedSize / Sentence / Recursive / custom]
+**Thành viên 1 — [Chu Tuấn Việt]**
+- **Loại chiến lược:** [FixedSize]
 - **Mô tả & lý do chọn cho chủ đề này:** *(2-3 câu)*
 - **Code snippet (nếu custom):**
 ```python
 # Dán mã nguồn (implementation) vào đây
 ```
 
-**Thành viên 2 — [Tên]**
-- **Loại chiến lược:**
+**Thành viên 2 — [Hà Xuân Sơn]**
+- **Loại chiến lược:** [Sentence]
 - **Mô tả & lý do chọn:**
 - **Code snippet (nếu custom):**
 
-**Thành viên 3 — [Tên]**
-- **Loại chiến lược:**
+**Thành viên 3 — [Vũ Quốc Anh]**
+- **Loại chiến lược:** [Recursive]
 - **Mô tả & lý do chọn:**
 - **Code snippet (nếu custom):**
 
@@ -82,9 +82,9 @@ Chạy `ChunkingStrategyComparator().compare()` trên 2-3 tài liệu:
 
 | Thành viên | Chiến lược (Strategy) | Điểm truy xuất (/10) | Điểm mạnh | Điểm yếu |
 |-----------|----------|----------------------|-----------|----------|
-| | | | | |
-| | | | | |
-| | | | | |
+| Chu Tuấn Việt | FixedSize | [8-10] | Chunk nhất quán, dễ xử lý; quản lý kích thước dễ dự đoán | Có thể cắt thông tin quan trọng ở ranh giới chunk |
+| Hà Xuân Sơn | Sentence | [8-10] | Giữ ngữ cảnh tốt; chunk là câu hoàn chỉnh | Số lượng chunk bất đều; câu dài gây vấn đề |
+| Vũ Quốc Anh | Recursive | [8-10] | Cân bằng kích thước & ngữ cảnh; phù hợp nhiều chủ đề | Phức tạp hơn; chậm hơn khi dữ liệu lớn |
 
 **Chiến lược nào tốt nhất cho chủ đề này? Tại sao?**
 > *Viết 2-3 câu — đây là phần được đánh giá cao nhất (khả năng suy nghĩ & giải thích):*
